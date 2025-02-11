@@ -4,7 +4,6 @@ import android.animation.Animator
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
-import android.content.Intent
 import android.os.Bundle
 import android.util.Patterns
 import androidx.fragment.app.Fragment
@@ -13,7 +12,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
-import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import com.example.examine.R
 import com.example.examine.databinding.FragmentRegisterBinding
@@ -21,8 +19,8 @@ import com.example.examine.simpleinjection.Injection
 import com.example.examine.ui.auth.AuthViewModel
 import com.example.examine.ui.auth.AuthViewModelFactory
 import com.example.examine.ui.auth.login.LoginFragment
-import com.example.examine.ui.main.MainActivity
 import com.example.examine.utils.Constants.alertDialogMessage
+import com.example.examine.utils.DeviceIDHelper
 import com.example.examine.utils.Result
 
 class RegisterFragment : Fragment() {
@@ -56,10 +54,28 @@ class RegisterFragment : Fragment() {
     private fun setListeners() {
         binding.apply {
             btnRegister.setOnClickListener {
+                val imei = DeviceIDHelper.getDeviceID(requireContext(), requireActivity())
+
+                if (imei.isEmpty()) {
+                    val builder = AlertDialog.Builder(requireContext())
+                    builder.setCancelable(false)
+
+                    with(builder)
+                    {
+                        setTitle("Register Gagal")
+                        setMessage("Gagal mendapatkan IMEI!")
+                        setPositiveButton("OK") { dialog, _ ->
+                            dialog.dismiss()
+                            changeToLogin()
+                        }
+                        show()
+                    }
+                }
+
                 if (isValid()) {
                     authViewModel.registerUser(
                         binding.edName.text.toString(),
-                        binding.edNisn.text.toString(),
+                        imei = imei,
                         binding.edEmail.text.toString(),
                         binding.edPassword.text.toString()
                     ).observe(viewLifecycleOwner) { result ->
@@ -150,8 +166,6 @@ class RegisterFragment : Fragment() {
     private fun setupPlayAnimation() {
         val name: Animator =
             ObjectAnimator.ofFloat(binding.edNameLayout, View.ALPHA, 1f).setDuration(150)
-        val nisn: Animator =
-            ObjectAnimator.ofFloat(binding.edNisnLayout, View.ALPHA, 1f).setDuration(150)
         val email: Animator =
             ObjectAnimator.ofFloat(binding.edEmailLayout, View.ALPHA, 1f).setDuration(150)
         val password: Animator =
@@ -162,7 +176,7 @@ class RegisterFragment : Fragment() {
             ObjectAnimator.ofFloat(binding.layoutText, View.ALPHA, 1f).setDuration(150)
 
         val animatorSet = AnimatorSet()
-        animatorSet.playSequentially(name, nisn, email, password, button, layoutText)
+        animatorSet.playSequentially(name, email, password, button, layoutText)
         animatorSet.startDelay = 150
         animatorSet.start()
     }

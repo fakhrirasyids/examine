@@ -5,10 +5,6 @@ import com.google.gson.annotations.SerializedName
 import kotlinx.parcelize.Parcelize
 
 data class GetTestSessionResponse(
-
-	@field:SerializedName("payload")
-	val payload: TestSession? = null,
-
 	@field:SerializedName("success")
 	val success: Boolean? = null,
 

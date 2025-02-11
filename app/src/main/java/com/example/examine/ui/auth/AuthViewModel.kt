@@ -26,19 +26,21 @@ class AuthViewModel(
     fun loginUser(username: String, password: String) =
         authRepository.loginUser(username, password)
 
-    fun registerUser(fullname: String, nisn: String, email: String, password: String) =
-        authRepository.registerUser(fullname, nisn, email, password)
+    fun registerUser(fullname: String, imei: String, email: String, password: String) =
+        authRepository.registerUser(fullname, imei, email, password)
 
     fun savePreferences(
         accessToken: String,
         fullname: String,
         email: String,
+        imei: String
     ) {
         viewModelScope.launch {
             userPreferences.savePreferences(
-                accessToken,
-                fullname,
-                email,
+                accessToken = accessToken,
+                username = fullname,
+                email = email,
+                imei = imei
             )
         }
     }

@@ -70,6 +70,7 @@ class LoginFragment : Fragment() {
                                     accessToken = result.data.accessToken.toString(),
                                     email = result.data.user?.email.toString(),
                                     fullname = result.data.user?.name.toString(),
+                                    imei = result.data.user?.imei.toString()
                                 )
 
                                 val builder = AlertDialog.Builder(requireContext())

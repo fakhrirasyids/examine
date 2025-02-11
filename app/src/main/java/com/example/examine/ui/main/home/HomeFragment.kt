@@ -3,7 +3,6 @@ package com.example.examine.ui.main.home
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.RestrictionsManager
-import android.os.Build
 import android.os.Bundle
 import android.text.Html
 import android.util.Log
@@ -16,19 +15,23 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.viewModels
 import com.example.examine.R
+import com.example.examine.data.remote.models.ScanResponse
 import com.example.examine.data.remote.models.TestSession
 import com.example.examine.databinding.FragmentHomeBinding
 import com.example.examine.simpleinjection.Injection
-import com.example.examine.ui.auth.AuthActivity
 import com.example.examine.ui.main.MainViewModelFactory
-import com.example.examine.ui.main.profile.ProfileViewModel
 import com.example.examine.ui.scanner.ScannerActivity
 import com.example.examine.ui.test.TestActivity
 import com.example.examine.ui.test.TestActivity.Companion.KEY_TEST
 import com.example.examine.ui.test.TestActivity.Companion.KEY_TEST_CODE
+import com.example.examine.utils.Base64Helper
 import com.example.examine.utils.CipherHelper
 import com.example.examine.utils.Constants.alertDialogMessage
+import com.example.examine.utils.DeviceIDHelper
 import com.example.examine.utils.Result
+import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 
 class HomeFragment : Fragment() {
@@ -48,9 +51,20 @@ class HomeFragment : Fragment() {
         if (result.resultCode == AppCompatActivity.RESULT_OK) {
             if (result.data != null) {
                 val urlQrCode = result.data!!.getStringExtra(URL_QR_CODE)
+                homeViewModel.tempIV.postValue("")
 
-                if (urlQrCode != null) {
-                    processScannedQrCode(urlQrCode)
+                try {
+                    if (urlQrCode != null) {
+                        processScannedQrCode(urlQrCode)
+                    }
+                } catch (e: Exception) {
+                    loadingDialog.dismiss()
+
+                    alertDialogMessage(
+                        requireContext(),
+                        e.message.toString(),
+                        "Gagal"
+                    )
                 }
             }
         } else if (result.resultCode == RestrictionsManager.RESULT_ERROR) {
@@ -84,89 +98,89 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun processScannedQrCode(code: String) {
-        try {
-            loadingDialog.show()
-            var testSessionCode = ""
+    private fun processScannedQrCode(encryptedSessionCode: String) {
+        val decryptedSessionCode = decryptCode(encryptedSessionCode)
+        if (!checkIsDeviceIDSame()) throw IllegalArgumentException("Device ID tidak Sama")
+        val encryptedUserMetadata = constructUserMetadata(decryptedSessionCode)
+        startPresent(encryptedUserMetadata)
+    }
 
-            CipherHelper.apply {
-                val jsonDecoded = String(base64Decoder(code))
-                val scannedData = jsonParserQRCode(jsonDecoded)
+    private fun constructUserMetadata(decryptedSessionCode: ScanResponse): ScanResponse {
+        val currentDate =
+            SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(System.currentTimeMillis())
+        val currentTime =
+            SimpleDateFormat("HH:mm", Locale.getDefault()).format(System.currentTimeMillis())
+        val jsonRequestBodyPresent = JSONObject()
+        jsonRequestBodyPresent.put("code", decryptedSessionCode.value)
+        jsonRequestBodyPresent.put("imei", homeViewModel.getImei)
+        jsonRequestBodyPresent.put("dateFromMobile", currentDate)
+        jsonRequestBodyPresent.put("timeFromMobile", currentTime)
 
-                val cipherText = scannedData.value
-                val ivTrue = provideTrueInitializeValue(base64Decoder(scannedData.iv))
+        val jsonStringPresent = jsonRequestBodyPresent.toString()
 
-                Log.i("ScannedQRCodeInfo", "Code: $code")
-                Log.i("ScannedQRCodeInfo", "JSON Parsed: $jsonDecoded")
-                Log.i("ScannedQRCodeInfo", "JSON Transformed: $scannedData")
-                Log.i("ScannedQRCodeInfo", "Cipher Text: $cipherText")
-                Log.i("ScannedQRCodeInfo", "Initialize Value: $ivTrue")
+        val ivTrueJson =
+            CipherHelper.provideTrueInitializeValue(Base64Helper.base64Decoder(decryptedSessionCode.iv))
+        val cipherTextRequestBody =
+            CipherHelper.encryptTestSessionCode(jsonStringPresent, ivTrueJson)
+        val scanBody = ScanResponse(
+            value = cipherTextRequestBody,
+            iv = decryptedSessionCode.iv
+        )
 
-                testSessionCode = descryptTestSessionCode(cipherText, ivTrue)
+        return scanBody
+    }
 
-                Log.i("ScannedQRCodeInfo", "Decrypted Value: $testSessionCode")
-            }
+    private fun startPresent(scanResponse: ScanResponse) {
+        homeViewModel.startAbsent(scanResponse.value, scanResponse.iv)
+            .observe(viewLifecycleOwner) { result ->
+                when (result) {
+                    is Result.Loading -> {
+                        loadingDialog.show()
+                    }
 
-            val regexPattern = Regex("s:\\d+:\"([^\"]*)\";")
-            val matchResult = regexPattern.find(testSessionCode)
+                    is Result.Success -> {
+                        loadingDialog.dismiss()
+                        alertDialogMessage(
+                            requireContext(),
+                            result.data.message.toString(),
+                            "Sukses"
+                        )
+                    }
 
-            val extractedValue = matchResult?.groups?.get(1)?.value
-
-            homeViewModel.getTestScanResult(extractedValue.toString())
-                .observe(viewLifecycleOwner) { result ->
-                    when (result) {
-                        is Result.Loading -> {
-                            loadingDialog.show()
-                        }
-
-                        is Result.Success -> {
-                            loadingDialog.dismiss()
-                            val testResponse = result.data.payload
-
-                            val builder = AlertDialog.Builder(requireContext())
-                            builder.setCancelable(false)
-
-                            val message = """   
-Kelas: ${testResponse?.jsonMemberClass}
-Guru: ${testResponse?.teacher}                                     
-                                  
-Subjek Tes: ${testResponse?.test?.subject}
-Deskripsi: ${testResponse?.test?.description}
-
-Waktu Mulai: ${testResponse?.timeStart}
-Waktu Selesai: ${testResponse?.timeEnd}
-        
-Apakah anda ingin memulai Tes ini?
-        """
-
-                            with(builder)
-                            {
-                                setTitle("Informasi Test Didapatkan")
-                                setMessage(message)
-                                setPositiveButton("Mulai") { _, _ ->
-                                    startTest(extractedValue.toString(), testResponse!!)
-                                }
-                                setNegativeButton("Batal") { _, _ ->
-
-                                }
-                                show()
-                            }
-                        }
-
-                        is Result.Error -> {
-                            loadingDialog.dismiss()
-                            alertDialogMessage(
-                                requireContext(),
-                                result.error,
-                                "Gagal Mendapatkan Informasi Test"
-                            )
-                        }
+                    is Result.Error -> {
+                        loadingDialog.dismiss()
+                        alertDialogMessage(
+                            requireContext(),
+                            result.error,
+                            "Gagal Presensi"
+                        )
                     }
                 }
-        } catch (e: Exception) {
-            loadingDialog.dismiss()
+            }
+    }
 
-        }
+    private fun decryptCode(encryptedSessionCode: String): ScanResponse {
+        val jsonDecoded = String(Base64Helper.base64Decoder(encryptedSessionCode))
+        val scanResponseData = CipherHelper.jsonToScanResponse(jsonDecoded)
+
+        val cipherText = scanResponseData.value
+        val ivTrue =
+            CipherHelper.provideTrueInitializeValue(Base64Helper.base64Decoder(scanResponseData.iv))
+        val testSessionCode = CipherHelper.decryptTestSessionCode(cipherText, ivTrue)
+
+        scanResponseData.value = testSessionCode
+
+        return scanResponseData
+    }
+
+    private fun checkIsDeviceIDSame(): Boolean {
+        val currentPhoneImei =
+            DeviceIDHelper.getDeviceID(requireContext(), requireActivity())
+        val accountImei = homeViewModel.getImei
+
+        Log.e("FTEST", "checkIsDeviceIDSame: $currentPhoneImei == $accountImei", )
+
+        return currentPhoneImei == accountImei
     }
 
     @SuppressLint("UnsafeOptInUsageError")
@@ -207,7 +221,7 @@ Apakah anda ingin memulai Tes ini?
 
     private fun setRules() {
         val rules =
-            "<ol><li> Setiap Tes hanya bisa diikuti <b>1 kali</b>.</li><li> Sistem akan memonitor peserta selama tes.</li><li> Selama Tes peserta tidak diperkenankan untuk membuka aplikasi lain, jika peserta keluar dari aplikasi maka aktivitas akan terdeteksi.</li></ol>"
+            "<ol><li> Presensi hanya bisa dilakukan di Smartphone yang <b>telah terdaftar</b>.</li><li> Setiap presensi hanya bisa dilakukan <b>1 kali</b>.</ol>"
         binding.tvTestRules.text = Html.fromHtml(rules, Html.FROM_HTML_MODE_LEGACY)
     }
 

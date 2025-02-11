@@ -20,13 +20,13 @@ class AuthRepository(
 
     fun registerUser(
         fullname: String,
-        nisn: String,
+        imei: String,
         email: String,
         password: String,
     ) = liveData {
         emit(Result.Loading)
         try {
-            val registerUser = apiService.registerUser(fullname, nisn, email, password)
+            val registerUser = apiService.registerUser(fullname, imei, email, password)
             emit(Result.Success(registerUser))
         } catch (e: Exception) {
             e.printStackTrace()

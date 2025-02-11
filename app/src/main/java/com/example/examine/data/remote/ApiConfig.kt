@@ -8,6 +8,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 
 
 object ApiConfig {
@@ -22,13 +23,18 @@ object ApiConfig {
             .setLenient()
             .create()
 
+        val clientBuilder = OkHttpClient.Builder()
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .addInterceptor(loggingInterceptor)
+
         val retrofit = Retrofit.Builder()
             .baseUrl(BuildConfig.API_ENDPOINT)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .client(
                 if (token != preferenceDefaultValue) {
-                    OkHttpClient.Builder()
-                        .addInterceptor(loggingInterceptor)
+                    clientBuilder
                         .addInterceptor(Interceptor { chain ->
                             val req = chain.request()
                             val reqHeaders = req.newBuilder()
@@ -38,8 +44,7 @@ object ApiConfig {
                         })
                         .build()
                 } else {
-                    OkHttpClient.Builder()
-                        .addInterceptor(loggingInterceptor)
+                    clientBuilder
                         .build()
                 }
             )

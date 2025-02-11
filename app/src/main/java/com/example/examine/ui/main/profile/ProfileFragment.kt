@@ -60,7 +60,6 @@ class ProfileFragment : Fragment() {
     private fun setListeners() {
         binding.apply {
             btnLogout.setOnClickListener {
-                profileViewModel.clearPreferences()
                 val builder = AlertDialog.Builder(requireContext())
                 builder.setCancelable(false)
 
@@ -68,6 +67,7 @@ class ProfileFragment : Fragment() {
                 {
                     setMessage("Sukses Logout Akun!")
                     setPositiveButton("OK") { _, _ ->
+                        profileViewModel.clearPreferences()
                         val iAuth = Intent(
                             requireActivity(),
                             AuthActivity::class.java

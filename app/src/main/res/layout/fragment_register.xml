@@ -44,25 +44,6 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/ed_nisn_layout"
-            style="@style/ThemeOverlay.Material3.TextInputEditText.FilledBox.Dense"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:alpha="0"
-            app:boxBackgroundColor="@color/white"
-            app:boxStrokeColor="@android:color/darker_gray"
-            tools:alpha="100">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/ed_nisn"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="NISN"
-                android:inputType="number" />
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/ed_email_layout"
             style="@style/ThemeOverlay.Material3.TextInputEditText.FilledBox.Dense"
             android:layout_width="match_parent"

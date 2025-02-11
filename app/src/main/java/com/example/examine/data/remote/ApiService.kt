@@ -21,7 +21,7 @@ interface ApiService {
     @FormUrlEncoded
     suspend fun registerUser(
         @Field("name") name: String,
-        @Field("nisn") nisn: String,
+        @Field("imei") imei: String,
         @Field("email") email: String,
         @Field("password") password: String
     ): LoginRegisterResponse
@@ -39,8 +39,9 @@ interface ApiService {
     @POST("api/sessions/start")
     @FormUrlEncoded
     suspend fun startTest(
-        @Field("code") code: String,
-    ): StartTestResponse
+        @Field("encrypted") encrypted: String,
+        @Field("iv") iv: String,
+    ): GetTestSessionResponse
 
     @POST("api/sessions/store-answer")
     suspend fun storeTest(

@@ -13,8 +13,8 @@ data class LoginRegisterResponse(
 
 data class User(
 
-    @field:SerializedName("nisn")
-    val nisn: String? = null,
+    @field:SerializedName("imei")
+    val imei: String? = null,
 
     @field:SerializedName("name")
     val name: String? = null,

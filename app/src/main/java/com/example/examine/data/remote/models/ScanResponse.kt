@@ -4,14 +4,14 @@ import com.google.gson.annotations.SerializedName
 
 data class ScanResponse(
     @SerializedName("iv")
-    val iv: String,
+    val iv: String = "",
 
     @SerializedName("value")
-    val value: String,
+    var value: String = "",
 
     @SerializedName("mac")
-    val mac: String,
+    val mac: String = "",
 
     @SerializedName("tag")
-    val tag: String
+    val tag: String = ""
 )

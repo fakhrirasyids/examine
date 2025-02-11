@@ -44,7 +44,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="20sp"
                     android:gravity="center"
-                    android:text="Mulai Kerjakan Soal!"
+                    android:text="Mulai Presensi!"
                     android:textColor="@color/white"
                     android:textSize="20sp"
                     android:textStyle="bold" />
@@ -70,7 +70,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:text="Peraturan Tes"
+                    android:text="Peraturan Presensi"
                     android:textColor="@color/black"
                     android:textSize="16sp"
                     android:textStyle="bold" />

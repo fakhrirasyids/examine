@@ -15,15 +15,18 @@ class UserPreferences private constructor(private val dataStore: DataStore<Prefe
     fun getAccessToken() = dataStore.data.map { it[PREF_ACCESS_TOKEN] ?: preferenceDefaultValue }
     fun getUsername() = dataStore.data.map { it[PREF_USERNAME] ?: preferenceDefaultValue }
     fun getEmail() = dataStore.data.map { it[PREF_EMAIL] ?: preferenceDefaultValue }
+    fun getImei() = dataStore.data.map { it[PREF_IMEI] ?: preferenceDefaultValue }
 
     suspend fun savePreferences(
         accessToken: String,
         username: String,
+        imei: String,
         email: String,
     ) {
         dataStore.edit { prefs ->
             prefs[PREF_ACCESS_TOKEN] = accessToken
             prefs[PREF_USERNAME] = username
+            prefs[PREF_IMEI] = imei
             prefs[PREF_EMAIL] = email
         }
     }
@@ -48,6 +51,7 @@ class UserPreferences private constructor(private val dataStore: DataStore<Prefe
 
         val PREF_ACCESS_TOKEN = stringPreferencesKey("pref_access_token")
         val PREF_USERNAME = stringPreferencesKey("pref_username")
+        val PREF_IMEI = stringPreferencesKey("pref_imei")
         val PREF_EMAIL = stringPreferencesKey("pref_email")
 
         const val preferenceDefaultValue: String = "preferences_default_value"

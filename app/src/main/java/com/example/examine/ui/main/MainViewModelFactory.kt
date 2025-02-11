@@ -17,7 +17,7 @@ class MainViewModelFactory constructor(
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
-            HomeViewModel(TestRepository(apiService)) as T
+            HomeViewModel(TestRepository(apiService),userPreferences) as T
         } else if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
             ProfileViewModel(AuthRepository(apiService), userPreferences) as T
         } else

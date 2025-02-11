@@ -6,10 +6,10 @@ import com.example.examine.data.remote.models.AnswerPayload
 import com.example.examine.utils.Result
 
 class TestRepository(private val apiService: ApiService) {
-    fun getTestSessionScan(code: String) = liveData {
+    fun getTestSessionScan(code: String, iv: String) = liveData {
         emit(Result.Loading)
         try {
-            val getTestSessionResponse = apiService.getTestSessionScan(code)
+            val getTestSessionResponse = apiService.startTest(code, iv)
             emit(Result.Success(getTestSessionResponse))
         } catch (e: Exception) {
             e.printStackTrace()
@@ -20,7 +20,7 @@ class TestRepository(private val apiService: ApiService) {
     fun startTest(code: String) = liveData {
         emit(Result.Loading)
         try {
-            val startTestResponse = apiService.startTest(code)
+            val startTestResponse = apiService.getTestSessionScan(code)
             emit(Result.Success(startTestResponse))
         } catch (e: Exception) {
             e.printStackTrace()
